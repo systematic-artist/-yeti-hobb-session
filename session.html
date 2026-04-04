@@ -536,11 +536,9 @@ function renderWhoStrip(){
   document.getElementById('who-chips').innerHTML=team.map((p,i)=>{
     const isMine = activeUser === p.name;
     const isTaken = taken.includes(p.name) && !isMine;
-    return `<div class="you-chip${isMine?' active':''}${isTaken?' taken':''}"
-      onclick="${isTaken?'':` "setUser('${esJ(p.name)}')" `}"
-      style="${isTaken?'opacity:.35;cursor:not-allowed;':''}"
-      title="${isTaken?'Already picked by someone else':''}"
-    >${p.name}</div>`;
+    const click = isTaken ? '' : `onclick="setUser('${esJ(p.name)}')"`;
+    const style = isTaken ? 'opacity:.35;cursor:not-allowed;text-decoration:line-through' : '';
+    return `<div class="you-chip${isMine?' active':''}${isTaken?' taken':''}" ${click} style="${style}">${p.name}</div>`;
   }).join('');
   const label = document.getElementById('who-label');
   if(activeUser){ label.textContent=activeUser; label.classList.remove('needs-pick'); }
