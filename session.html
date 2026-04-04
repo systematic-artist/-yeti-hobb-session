@@ -621,7 +621,17 @@ function renderContainers(){
       if(!activeUser){
         myBtn=role==='vision'?`<span style="font-size:11px;color:var(--text-3);font-style:italic">← pick your name above</span>`:'';
       } else if(iHaveThisRole){
-        myBtn=`<button class="role-claim-btn claimed-${role}" onclick="unclaim('${c.id}','${role}')">✓ ${role} — ${iHaveThisRole.hours}h <span style="opacity:.6;font-size:10px">× remove</span></button>`;
+        const maxH = (rem + iHaveThisRole.hours).toFixed(1); // rem + what they already spent here
+        myBtn=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <button class="role-claim-btn claimed-${role}" onclick="unclaim('${c.id}','${role}')">✓ ${role} <span style="opacity:.6;font-size:10px">× remove</span></button>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-2)">
+            <input type="number" min="0.5" max="${maxH}" step="0.5" value="${iHaveThisRole.hours}"
+              style="width:52px;padding:3px 6px;border:1px solid var(--border);border-radius:var(--rs);font-size:12px;font-weight:600"
+              onchange="updateHours('${c.id}','${role}',this.value)"
+              onclick="event.stopPropagation()">
+            <span>h/wk</span>
+          </div>
+        </div>`;
       } else if(!myRole){
         const cost=c.cost[role];
         const wouldExceed=rem<cost;
@@ -654,6 +664,11 @@ function renderContainers(){
   }
 }
 
+async function updateHours(cid, role, val){
+  if(!activeUser) return;
+  const hours = Math.max(0.5, parseFloat(val)||0.5);
+  await fetch(API+'/api/session/updatehours',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:activeUser,cid,role,hours})});
+}
 async function claim(cid,role){
   if(!activeUser) return;
   const res=await fetch(API+'/api/session/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:activeUser,cid,role})});
@@ -714,13 +729,23 @@ function renderSynthesis(){
     </div>`;
   }).join('');
 
-  document.getElementById('unassigned-wrap').innerHTML=unassigned.length?`
-    <p class="sec-title">Not yet in a team</p>
+  const surprises = serverState?.surprises||[];
+  document.getElementById('unassigned-wrap').innerHTML=`
+    ${unassigned.length?`
+    <p class="sec-title">Not yet in a team — filled cards</p>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px">${unassigned.map(p=>{
       const idx=t.indexOf(p);
       const c2=av(idx);
       return`<span style="background:${c2.bg};color:${c2.fg};padding:4px 12px;border-radius:10px;font-size:12px;cursor:pointer" onclick="showDetail(${idx})"><strong>${p.name}</strong></span>`;
-    }).join('')}</div>`:'';
+    }).join('')}</div>`:''}
+    ${surprises.length?`
+    <p class="sec-title">✨ Surprise picks — no card yet</p>
+    <p style="font-size:12px;color:var(--text-2);margin-bottom:10px;line-height:1.6">These people haven't filled a card. Any team can recruit them — reach out directly.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px">${surprises.map(s=>`
+      <span style="background:var(--info-bg);color:var(--info-tx);padding:4px 12px;border-radius:10px;font-size:12px;display:inline-flex;align-items:center;gap:8px">
+        <strong>${s.name}</strong>${s.phone?`<span style="opacity:.7;font-size:10px">${s.phone}</span>`:''}
+      </span>`).join('')}</div>`:''}
+  `;
 }
 
 function hireDropHTML(cid,role,excludeNames){
