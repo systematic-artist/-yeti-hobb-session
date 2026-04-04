@@ -77,7 +77,7 @@ body.bars-3 .action-bar{top:92px}
 /* SLIDES */
 .slide{display:none;flex:1;flex-direction:column;margin-top:96px}
 .slide.active{display:flex}
-body.bars-3 .slide-3{margin-top:148px}
+body.bars-3 .slide{margin-top:148px}
 .slide-inner{flex:1;padding:28px 20px 40px;max-width:1100px;margin:0 auto;width:100%}
 .slide-coach{font-size:12px;color:var(--text-3);font-style:italic;margin-bottom:10px}
 .slide-eyebrow{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-3);margin-bottom:8px}
@@ -405,6 +405,12 @@ function handleServerState(state){
     switchToStep(state.step);
   }
 
+  // Always show who-strip once session is active
+  if(state.active && team.length){
+    document.getElementById('who-strip').classList.add('visible');
+    document.body.classList.add('bars-3');
+  }
+
   // Update live count banner
   if(currentStep===3 && team.length){
     const wrap = document.getElementById('live-count-wrap');
@@ -465,14 +471,12 @@ function renderAll(step){
 function switchToStep(step){
   currentStep=step;
   document.querySelectorAll('.slide').forEach((s,i)=>s.classList.toggle('active',i+1===step));
-  if(step===3){
+  // Who-strip always visible once session is active (all steps)
+  if(team.length){
     document.getElementById('who-strip').classList.add('visible');
     document.body.classList.add('bars-3');
-    renderContainers();
-  } else {
-    document.getElementById('who-strip').classList.remove('visible');
-    document.body.classList.remove('bars-3');
   }
+  if(step===3) renderContainers();
   if(step===4 && serverState?.claims) renderSynthesis();
   document.getElementById('action-bar').classList.add('visible');
   updateActionBar();
