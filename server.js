@@ -168,7 +168,7 @@ app.post('/api/session/init', (req,res) => {
   if(!members?.length) return res.status(400).json({error:'members required'});
   session.team = members;
   session.pending = (pending||[]).map(p=>({name:p.name,phone:p.phone||''}));
-  session.surprises = [];
+  session.surprises = (pending||[]).map(p=>({name:p.name,phone:p.phone||''})); // auto-add pending as surprise picks
   session.step = 1;
   session.active = true;
   resetClaims();
@@ -237,6 +237,16 @@ app.post('/api/session/claim', (req,res) => {
   });
   session.claims[cid][role].push({name, hours: cost});
   session.claimedCount = countClaimers();
+  broadcast(publicState()); saveSession();
+  res.json({ok:true});
+});
+
+// Update hours for a claimed role
+app.post('/api/session/updatehours', (req,res) => {
+  const {name, cid, role, hours} = req.body;
+  if(!session.claims[cid]) return res.status(400).json({error:'invalid container'});
+  const entry = session.claims[cid][role]?.find(a=>a.name===name);
+  if(entry) entry.hours = parseFloat(hours)||0.5;
   broadcast(publicState()); saveSession();
   res.json({ok:true});
 });
