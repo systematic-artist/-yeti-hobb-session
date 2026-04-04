@@ -56,6 +56,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--bg);
 .who-chips{display:flex;flex-wrap:wrap;gap:6px}
 .you-chip{font-size:12px;padding:5px 13px;border-radius:20px;border:1px solid var(--border);cursor:pointer;color:var(--text-2);background:var(--surface);transition:all .1s}
 .you-chip.active{background:var(--text);color:#fff;border-color:var(--text)}
+.you-chip.taken{opacity:.35;cursor:not-allowed;text-decoration:line-through}
 
 /* ACTION BAR */
 .action-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:fixed;top:48px;left:0;right:0;z-index:39}
@@ -393,6 +394,7 @@ function handleServerState(state){
       .then(d=>{
         team=d.team||[];
         renderAll(state.step);
+        renderWhoStrip();
       });
     return;
   }
@@ -419,7 +421,7 @@ function handleServerState(state){
   }
 
   // Re-render claim buttons if on step 3
-  if(currentStep===3) renderContainers();
+  if(currentStep===3){ renderWhoStrip(); renderContainers(); }
 
   // Re-render synthesis if on step 4 and we have data
   if(currentStep===4 && state.claims && state.team){
@@ -517,17 +519,35 @@ function renderTopTabs(){
 }
 function updateTopTabs(){ renderTopTabs(); }
 
+// ── CLIENT ID — unique per browser tab ──
+const clientId = 'c_' + Math.random().toString(36).slice(2) + Date.now();
+
 // ── WHO STRIP ──
 function renderWhoStrip(){
-  document.getElementById('who-chips').innerHTML=team.map((p,i)=>
-    `<div class="you-chip${activeUser===p.name?' active':''}" onclick="setUser('${esJ(p.name)}')">${p.name}</div>`
-  ).join('');
+  const taken = serverState?.takenNames || [];
+  document.getElementById('who-chips').innerHTML=team.map((p,i)=>{
+    const isMine = activeUser === p.name;
+    const isTaken = taken.includes(p.name) && !isMine;
+    return `<div class="you-chip${isMine?' active':''}${isTaken?' taken':''}"
+      onclick="${isTaken?'':` "setUser('${esJ(p.name)}')" `}"
+      style="${isTaken?'opacity:.35;cursor:not-allowed;':''}"
+      title="${isTaken?'Already picked by someone else':''}"
+    >${p.name}</div>`;
+  }).join('');
   const label = document.getElementById('who-label');
   if(activeUser){ label.textContent=activeUser; label.classList.remove('needs-pick'); }
   else { label.textContent='Who are you?'; label.classList.add('needs-pick'); }
 }
-function setUser(name){
-  activeUser=(activeUser===name)?null:name;
+async function setUser(name){
+  if(activeUser === name){
+    // deselect
+    activeUser = null;
+    await fetch(API+'/api/session/identity/release',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId})});
+  } else {
+    const res = await fetch(API+'/api/session/identity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,clientId})});
+    if(res.status===409){ alert('That name was just picked by someone else — try again'); return; }
+    activeUser = name;
+  }
   renderWhoStrip();
   if(currentStep===3) renderContainers();
 }
