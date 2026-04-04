@@ -376,48 +376,55 @@ function connectSSE(){
   };
 }
 
+let teamLoading = false;
+
 function handleServerState(state){
   serverState = state;
   if(!state.active){
-    // No session yet — show upload screen
     document.getElementById('upload-screen').style.display='flex';
     document.getElementById('waiting-screen').style.display='none';
     document.getElementById('action-bar').classList.remove('visible');
+    document.getElementById('who-strip').classList.remove('visible');
     return;
   }
   document.getElementById('upload-screen').style.display='none';
 
-  // Load team if we don't have it yet
-  if(!team.length && state.teamCount > 0){
+  // Load team if we don't have it yet — guard against multiple simultaneous fetches
+  if(!team.length && state.teamCount > 0 && !teamLoading){
+    teamLoading = true;
     fetch(API+'/api/session/team')
       .then(r=>r.json())
       .then(d=>{
-        team=d.team||[];
-        renderWhoStrip();
+        team = d.team||[];
+        teamLoading = false;
+        // Now show everything
         document.getElementById('who-strip').classList.add('visible');
         document.body.classList.add('bars-3');
+        renderWhoStrip();
         renderAll(state.step);
       });
     return;
   }
 
-  // Step changed from server
+  // Still loading — wait
+  if(teamLoading) return;
+
+  // Show who-strip always when session active
+  document.getElementById('who-strip').classList.add('visible');
+  document.body.classList.add('bars-3');
+
+  // Step changed from server — sync all clients
   if(state.step !== currentStep){
-    currentStep = state.step;
     switchToStep(state.step);
   }
 
-  // Always show who-strip once session is active
-  if(state.active && team.length){
-    document.getElementById('who-strip').classList.add('visible');
-    document.body.classList.add('bars-3');
-  }
+  // Always re-render who-strip so taken names stay current
+  renderWhoStrip();
 
-  // Update live count banner
+  // Update live count banner on step 3
   if(currentStep===3 && team.length){
-    const wrap = document.getElementById('live-count-wrap');
     const pct = Math.round((state.claimedCount/team.length)*100);
-    wrap.innerHTML=`<div class="live-count">
+    document.getElementById('live-count-wrap').innerHTML=`<div class="live-count">
       <span>🧑 ${state.claimedCount} of ${team.length} have claimed a space</span>
       <div class="live-count-bar"><div class="live-count-fill" style="width:${pct}%"></div></div>
     </div>`;
@@ -428,14 +435,8 @@ function handleServerState(state){
     document.getElementById('claimed-badge').style.display='none';
   }
 
-  // Re-render claim buttons if on step 3
-  if(currentStep===3){ renderWhoStrip(); renderContainers(); }
-
-  // Re-render synthesis if on step 4 and we have data
-  if(currentStep===4 && state.claims && state.team){
-    team = state.team;
-    renderSynthesis();
-  }
+  if(currentStep===3) renderContainers();
+  if(currentStep===4 && state.claims && state.team){ team=state.team; renderSynthesis(); }
 
   updateActionBar();
 }
