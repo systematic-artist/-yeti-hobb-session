@@ -116,8 +116,20 @@ function saveSession() {
 }
 function loadSession() {
   try {
+    // Try saved session state first
     const s = JSON.parse(fs.readFileSync(SESSION_FILE,'utf8'));
-    if(s?.active) { Object.assign(session, s); console.log('Session restored:', session.team.length,'members, step',session.step); }
+    if(s?.active) { Object.assign(session, s); console.log('Session restored:', session.team.length,'members, step',session.step); return; }
+  } catch(e) {}
+  // Fall back to data.json members — auto-start session
+  try {
+    const d = readData();
+    if(d.members && d.members.length) {
+      session.team = d.members;
+      session.active = true;
+      session.step = 1;
+      resetClaims();
+      console.log('Session auto-started from data.json:', session.team.length, 'members');
+    }
   } catch(e) {}
 }
 loadSession();
@@ -129,7 +141,7 @@ function publicState() {
     team: session.team,  // always send — clients need it to render names
     claimedCount: session.claimedCount,
     takenNames: Object.keys(session.identities),
-    claims: session.step >= 4 ? session.claims : null,
+    claims: session.claims,
     surprises: session.step >= 4 ? session.surprises : null,
     pending: session.pending,
   };
