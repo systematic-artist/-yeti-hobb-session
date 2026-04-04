@@ -37,7 +37,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--bg);
 .claimed-badge{background:rgba(255,255,255,.12);border-radius:100px;padding:3px 10px;font-size:11px;margin-left:auto;white-space:nowrap}
 
 /* UPLOAD SCREEN */
-.upload-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;margin-top:48px}
+.upload-screen{flex:1;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;margin-top:48px}
 .upload-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:40px;max-width:480px;width:100%;text-align:center}
 .upload-title{font-size:22px;font-weight:700;margin-bottom:8px}
 .upload-sub{font-size:13px;color:var(--text-2);margin-bottom:28px;line-height:1.6}
@@ -230,7 +230,7 @@ body.bars-3 .slide{margin-top:148px}
 </div>
 
 <!-- UPLOAD SCREEN -->
-<div class="upload-screen" id="upload-screen">
+<div class="upload-screen" id="upload-screen" style="display:none">
   <div class="upload-card">
     <div style="font-size:36px;margin-bottom:16px">🚀</div>
     <div class="upload-title">YETI × HoBB — Live Session</div>
@@ -380,65 +380,52 @@ let teamLoading = false;
 
 function handleServerState(state){
   serverState = state;
+
+  // No active session — show upload screen
   if(!state.active){
     document.getElementById('upload-screen').style.display='flex';
-    document.getElementById('waiting-screen').style.display='none';
     document.getElementById('action-bar').classList.remove('visible');
     document.getElementById('who-strip').classList.remove('visible');
     return;
   }
+
+  // Hide upload screen
   document.getElementById('upload-screen').style.display='none';
 
-  // Load team if we don't have it yet — guard against multiple simultaneous fetches
-  if(!team.length && state.teamCount > 0 && !teamLoading){
-    teamLoading = true;
-    fetch(API+'/api/session/team')
-      .then(r=>r.json())
-      .then(d=>{
-        team = d.team||[];
-        teamLoading = false;
-        // Now show everything
-        document.getElementById('who-strip').classList.add('visible');
-        document.body.classList.add('bars-3');
-        renderWhoStrip();
-        renderAll(state.step);
-      });
-    return;
-  }
+  // Load team from state directly
+  if(state.team && state.team.length) team = state.team;
 
-  // Still loading — wait
-  if(teamLoading) return;
-
-  // Show who-strip always when session active
+  // Show who-strip and action bar
   document.getElementById('who-strip').classList.add('visible');
   document.body.classList.add('bars-3');
+  document.getElementById('action-bar').classList.add('visible');
 
-  // Step changed from server — sync all clients
-  if(state.step !== currentStep){
-    switchToStep(state.step);
-  }
-
-  // Always re-render who-strip so taken names stay current
+  // Render who-strip with current taken names
   renderWhoStrip();
 
-  // Update live count banner on step 3
+  // Sync step
+  if(state.step !== currentStep){
+    switchToStep(state.step);
+  } else {
+    // Re-render current step content
+    if(currentStep===1){ renderPeople(); renderTopTabs(); updateActionBar(); }
+    if(currentStep===2){ renderSkills(); renderTopTabs(); updateActionBar(); }
+    if(currentStep===3){ renderContainers(); updateActionBar(); }
+    if(currentStep===4 && state.claims){ renderSynthesis(); updateActionBar(); }
+  }
+
+  // Live count on step 3
   if(currentStep===3 && team.length){
     const pct = Math.round((state.claimedCount/team.length)*100);
     document.getElementById('live-count-wrap').innerHTML=`<div class="live-count">
       <span>🧑 ${state.claimedCount} of ${team.length} have claimed a space</span>
       <div class="live-count-bar"><div class="live-count-fill" style="width:${pct}%"></div></div>
     </div>`;
-    const badge = document.getElementById('claimed-badge');
-    badge.textContent=`${state.claimedCount}/${team.length} claimed`;
-    badge.style.display='block';
+    document.getElementById('claimed-badge').textContent=`${state.claimedCount}/${team.length} claimed`;
+    document.getElementById('claimed-badge').style.display='block';
   } else {
     document.getElementById('claimed-badge').style.display='none';
   }
-
-  if(currentStep===3) renderContainers();
-  if(currentStep===4 && state.claims && state.team){ team=state.team; renderSynthesis(); }
-
-  updateActionBar();
 }
 
 // ── UPLOAD ──
@@ -464,28 +451,18 @@ async function handleUpload(e){
 
 // ── RENDER ALL ──
 function renderAll(step){
-  document.getElementById('who-strip').classList.add('visible');
-  document.body.classList.add('bars-3');
-  renderTopTabs();
-  renderPeople();
-  renderSkills();
-  renderWhoStrip();
   switchToStep(step||1);
 }
 
 function switchToStep(step){
   currentStep=step;
   document.querySelectorAll('.slide').forEach((s,i)=>s.classList.toggle('active',i+1===step));
-  // Who-strip always visible once session is active (all steps)
-  if(team.length){
-    document.getElementById('who-strip').classList.add('visible');
-    document.body.classList.add('bars-3');
-  }
+  renderTopTabs();
+  updateActionBar();
+  if(step===1) renderPeople();
+  if(step===2) renderSkills();
   if(step===3) renderContainers();
   if(step===4 && serverState?.claims) renderSynthesis();
-  document.getElementById('action-bar').classList.add('visible');
-  updateActionBar();
-  updateTopTabs();
   window.scrollTo(0,0);
 }
 
