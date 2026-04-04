@@ -393,8 +393,10 @@ function handleServerState(state){
       .then(r=>r.json())
       .then(d=>{
         team=d.team||[];
-        renderAll(state.step);
         renderWhoStrip();
+        document.getElementById('who-strip').classList.add('visible');
+        document.body.classList.add('bars-3');
+        renderAll(state.step);
       });
     return;
   }
@@ -461,6 +463,8 @@ async function handleUpload(e){
 
 // ── RENDER ALL ──
 function renderAll(step){
+  document.getElementById('who-strip').classList.add('visible');
+  document.body.classList.add('bars-3');
   renderTopTabs();
   renderPeople();
   renderSkills();
