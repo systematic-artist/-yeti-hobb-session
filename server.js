@@ -66,10 +66,11 @@ let session = {
   active: false,
   team: [],
   pending: [],
-  step: 1,           // 1=room, 2=constraints, 3=claim, 4=teams
-  claims: {},         // {containerId: {vision:[{name,hours}], lead:[...], ops:[...]}}
+  step: 1,
+  claims: {},
   surprises: [],
-  claimedCount: 0,    // how many unique people have claimed anything
+  claimedCount: 0,
+  identities: {}, // {name: clientId} — who has claimed which identity
 };
 
 function resetClaims() {
@@ -115,7 +116,7 @@ function publicState() {
     step: session.step,
     teamCount: session.team.length,
     claimedCount: session.claimedCount,
-    // Step 4 only: full assignments
+    takenNames: Object.keys(session.identities), // names already picked
     claims: session.step >= 4 ? session.claims : null,
     team: session.step >= 4 ? session.team : null,
     surprises: session.step >= 4 ? session.surprises : null,
@@ -172,7 +173,32 @@ app.post('/api/session/step', (req,res) => {
   res.json({ok:true, step});
 });
 
-// Claim a role
+// Claim identity (pick your name)
+app.post('/api/session/identity', (req,res) => {
+  const {name, clientId} = req.body;
+  if(!name || !clientId) return res.status(400).json({error:'missing fields'});
+  // Release any previous identity this client had
+  Object.keys(session.identities).forEach(n => {
+    if(session.identities[n] === clientId) delete session.identities[n];
+  });
+  // Claim new identity if not taken by someone else
+  if(session.identities[name] && session.identities[name] !== clientId) {
+    return res.status(409).json({error:'already taken'});
+  }
+  session.identities[name] = clientId;
+  broadcast(publicState());
+  res.json({ok:true});
+});
+
+// Release identity
+app.post('/api/session/identity/release', (req,res) => {
+  const {clientId} = req.body;
+  Object.keys(session.identities).forEach(n => {
+    if(session.identities[n] === clientId) delete session.identities[n];
+  });
+  broadcast(publicState());
+  res.json({ok:true});
+});
 app.post('/api/session/claim', (req,res) => {
   const {name, cid, role} = req.body;
   if(!name||!cid||!role) return res.status(400).json({error:'missing fields'});
