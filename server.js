@@ -126,10 +126,10 @@ function publicState() {
     active: session.active,
     step: session.step,
     teamCount: session.team.length,
+    team: session.team,  // always send — clients need it to render names
     claimedCount: session.claimedCount,
-    takenNames: Object.keys(session.identities), // names already picked
+    takenNames: Object.keys(session.identities),
     claims: session.step >= 4 ? session.claims : null,
-    team: session.step >= 4 ? session.team : null,
     surprises: session.step >= 4 ? session.surprises : null,
     pending: session.pending,
   };
