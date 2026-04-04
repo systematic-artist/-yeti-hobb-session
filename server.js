@@ -6,6 +6,7 @@ app.use(express.json({limit:'10mb'}));
 app.use(express.static(__dirname));
 
 const DATA_FILE = path.join(__dirname, 'data.json');
+const SESSION_FILE = path.join(__dirname, 'session-state.json');
 
 // ── helpers ──
 function readData() {
@@ -110,6 +111,16 @@ function broadcast(data) {
     try { c.write(msg); return true; } catch(e) { return false; }
   });
 }
+function saveSession() {
+  try { fs.writeFileSync(SESSION_FILE, JSON.stringify(session,null,2)); } catch(e) {}
+}
+function loadSession() {
+  try {
+    const s = JSON.parse(fs.readFileSync(SESSION_FILE,'utf8'));
+    if(s?.active) { Object.assign(session, s); console.log('Session restored:', session.team.length,'members, step',session.step); }
+  } catch(e) {}
+}
+loadSession();
 function publicState() {
   return {
     active: session.active,
@@ -149,7 +160,7 @@ app.post('/api/session/init', (req,res) => {
   session.step = 1;
   session.active = true;
   resetClaims();
-  broadcast(publicState());
+  broadcast(publicState()); saveSession();
   res.json({ok:true, memberCount: members.length});
 });
 
@@ -169,7 +180,7 @@ app.post('/api/session/step', (req,res) => {
   const {step} = req.body;
   if(![1,2,3,4].includes(step)) return res.status(400).json({error:'invalid step'});
   session.step = step;
-  broadcast(publicState());
+  broadcast(publicState()); saveSession();
   res.json({ok:true, step});
 });
 
@@ -186,7 +197,7 @@ app.post('/api/session/identity', (req,res) => {
     return res.status(409).json({error:'already taken'});
   }
   session.identities[name] = clientId;
-  broadcast(publicState());
+  broadcast(publicState()); saveSession();
   res.json({ok:true});
 });
 
@@ -196,7 +207,7 @@ app.post('/api/session/identity/release', (req,res) => {
   Object.keys(session.identities).forEach(n => {
     if(session.identities[n] === clientId) delete session.identities[n];
   });
-  broadcast(publicState());
+  broadcast(publicState()); saveSession();
   res.json({ok:true});
 });
 app.post('/api/session/claim', (req,res) => {
@@ -214,7 +225,7 @@ app.post('/api/session/claim', (req,res) => {
   });
   session.claims[cid][role].push({name, hours: cost});
   session.claimedCount = countClaimers();
-  broadcast(publicState());
+  broadcast(publicState()); saveSession();
   res.json({ok:true});
 });
 
@@ -224,7 +235,7 @@ app.post('/api/session/unclaim', (req,res) => {
   if(!session.claims[cid]) return res.status(400).json({error:'invalid container'});
   session.claims[cid][role] = session.claims[cid][role].filter(a=>a.name!==name);
   session.claimedCount = countClaimers();
-  broadcast(publicState());
+  broadcast(publicState()); saveSession();
   res.json({ok:true});
 });
 
@@ -238,7 +249,7 @@ app.post('/api/session/hire', (req,res) => {
     session.claims[cid][role].push({name, hours: cost});
   }
   session.claimedCount = countClaimers();
-  broadcast(publicState());
+  broadcast(publicState()); saveSession();
   res.json({ok:true});
 });
 
@@ -248,7 +259,7 @@ app.post('/api/session/remove', (req,res) => {
   if(!session.claims[cid]) return res.status(400).json({error:'invalid container'});
   session.claims[cid][role] = session.claims[cid][role].filter(a=>a.name!==name);
   session.claimedCount = countClaimers();
-  broadcast(publicState());
+  broadcast(publicState()); saveSession();
   res.json({ok:true});
 });
 
@@ -257,14 +268,14 @@ app.post('/api/session/surprise', (req,res) => {
   const {name,phone} = req.body;
   if(!name) return res.status(400).json({error:'name required'});
   if(!session.surprises.find(s=>s.name===name)) session.surprises.push({name,phone:phone||''});
-  broadcast(publicState());
+  broadcast(publicState()); saveSession();
   res.json({ok:true});
 });
 
 // Remove surprise pick
 app.delete('/api/session/surprise/:name', (req,res) => {
   session.surprises = session.surprises.filter(s=>s.name!==decodeURIComponent(req.params.name));
-  broadcast(publicState());
+  broadcast(publicState()); saveSession();
   res.json({ok:true});
 });
 
