@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YETI × HoBB — Live Session</title>
+<style>
+:root{
+  --bg:#f9f8f5;--surface:#fff;--border:#e2e0d8;--border-strong:#c8c6bc;
+  --text:#1a1916;--text-2:#6b6860;--text-3:#a8a69f;
+  --vision-bg:#eeedfe;--vision-bd:#afa9ec;--vision-tx:#3c3489;
+  --lead-bg:#e1f5ee;--lead-bd:#5dcaa5;--lead-tx:#085041;
+  --ops-bg:#faeeda;--ops-bd:#ef9f27;--ops-tx:#633806;
+  --ok-bg:#eaf3de;--ok-bd:#97c459;--ok-tx:#3b6d11;
+  --warn-bg:#faeeda;--warn-bd:#fac775;--warn-tx:#854f0b;
+  --danger-bg:#fcebeb;--danger-bd:#f09595;--danger-tx:#a32d2d;
+  --info-bg:#e6f1fb;--info-tx:#0c447c;
+  --hot-bg:#fff3e0;--hot-bd:#ffb74d;--hot-tx:#e65100;
+  --r:10px;--rs:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+
+/* TOP BAR */
+.top-bar{background:var(--text);color:#fff;padding:0 16px;display:flex;align-items:center;gap:12px;position:fixed;top:0;left:0;right:0;z-index:50;min-height:48px}
+.top-bar-title{font-size:13px;font-weight:700;white-space:nowrap}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pulse-live 2s ease-in-out infinite;flex-shrink:0}
+@keyframes pulse-live{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.8)}}
+.step-tabs{display:flex;flex:1;overflow-x:auto;scrollbar-width:none;margin-left:8px}
+.step-tabs::-webkit-scrollbar{display:none}
+.step-tab{display:flex;align-items:center;gap:6px;padding:0 14px;font-size:12px;color:rgba(255,255,255,.4);border-bottom:2px solid transparent;white-space:nowrap;min-height:48px;transition:all .15s;user-select:none;cursor:default}
+.step-tab.active{color:#fff;border-bottom-color:#fff}
+.step-tab.done{color:rgba(255,255,255,.6)}
+.tab-num{width:18px;height:18px;border-radius:50%;border:1px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.step-tab.active .tab-num{background:#fff;color:var(--text);border-color:#fff}
+.step-tab.done .tab-num{background:rgba(74,222,128,.3);border-color:#4ade80;color:#4ade80}
+.claimed-badge{background:rgba(255,255,255,.12);border-radius:100px;padding:3px 10px;font-size:11px;margin-left:auto;white-space:nowrap}
+
+/* UPLOAD SCREEN */
+.upload-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;margin-top:48px}
+.upload-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:40px;max-width:480px;width:100%;text-align:center}
+.upload-title{font-size:22px;font-weight:700;margin-bottom:8px}
+.upload-sub{font-size:13px;color:var(--text-2);margin-bottom:28px;line-height:1.6}
+.upload-btn{display:inline-block;background:var(--text);color:#fff;padding:12px 28px;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;border:none;width:100%;margin-bottom:10px}
+.upload-btn:hover{opacity:.88}
+.upload-input{display:none}
+.upload-demo{background:none;border:1px solid var(--border);color:var(--text-2);padding:10px;border-radius:var(--rs);font-size:12px;cursor:pointer;width:100%}
+.upload-demo:hover{border-color:var(--border-strong)}
+
+/* WHO STRIP */
+.who-strip{background:var(--bg);border-bottom:1px solid var(--border);padding:8px 20px;display:none;align-items:center;gap:10px;flex-wrap:wrap;position:fixed;top:96px;left:0;right:0;z-index:37}
+.who-strip.visible{display:flex}
+.who-strip-label{font-size:11px;font-weight:700;color:var(--text-3);white-space:nowrap;text-transform:uppercase;letter-spacing:.8px}
+@keyframes label-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.who-strip-label.needs-pick{animation:label-pulse 1.8s ease-in-out infinite;color:var(--info-tx)}
+.who-chips{display:flex;flex-wrap:wrap;gap:6px}
+.you-chip{font-size:12px;padding:5px 13px;border-radius:20px;border:1px solid var(--border);cursor:pointer;color:var(--text-2);background:var(--surface);transition:all .1s}
+.you-chip.active{background:var(--text);color:#fff;border-color:var(--text)}
+
+/* ACTION BAR */
+.action-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:fixed;top:48px;left:0;right:0;z-index:39}
+.action-bar.visible{display:flex}
+body.bars-3 .action-bar{top:92px}
+.progress-dots{display:flex;gap:6px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--border)}
+.dot.done{background:var(--ok-tx)}
+.dot.active{background:var(--text);width:22px;border-radius:4px}
+.btn-back{padding:7px 16px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;font-size:12px;cursor:pointer;color:var(--text-2)}
+.btn-back:hover{border-color:var(--border-strong)}
+.btn-next{padding:7px 20px;border-radius:var(--rs);border:none;background:var(--text);color:#fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn-next:hover{opacity:.85}
+.btn-next:disabled{opacity:.35;cursor:not-allowed}
+@keyframes pulse-glow{0%{box-shadow:0 0 0 0 rgba(26,25,22,.35)}60%{box-shadow:0 0 0 10px rgba(26,25,22,0)}100%{box-shadow:0 0 0 0 rgba(26,25,22,0)}}
+.btn-pulse{animation:pulse-glow 2s ease-out infinite}
+
+/* SLIDES */
+.slide{display:none;flex:1;flex-direction:column;margin-top:96px}
+.slide.active{display:flex}
+body.bars-3 .slide-3{margin-top:148px}
+.slide-inner{flex:1;padding:28px 20px 40px;max-width:1100px;margin:0 auto;width:100%}
+.slide-coach{font-size:12px;color:var(--text-3);font-style:italic;margin-bottom:10px}
+.slide-eyebrow{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-3);margin-bottom:8px}
+.slide-heading{font-size:32px;font-weight:700;letter-spacing:-.5px;margin-bottom:8px;line-height:1.2}
+.slide-sub{font-size:14px;color:var(--text-2);margin-bottom:28px;line-height:1.65;max-width:580px}
+
+/* PEOPLE GRID */
+.people-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.person-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;cursor:pointer;transition:all .15s}
+.person-card:hover{border-color:var(--border-strong);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.pc-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.pc-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.pc-name{font-weight:600;font-size:13px}
+.pc-loc{font-size:10px;color:var(--text-3)}
+.pc-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.pc-tag{font-size:10px;padding:2px 7px;border-radius:10px;background:var(--bg);color:var(--text-2);border:1px solid var(--border)}
+.pc-play{font-size:11px;color:var(--text-2);font-style:italic;line-height:1.5}
+.pc-driver{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10px;color:var(--text-3)}
+.driver-track{flex:1;height:3px;background:var(--border);border-radius:2px}
+.driver-fill{height:100%;background:var(--text);border-radius:2px}
+
+/* SKILLS */
+.skills-wrap{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.skill-row{display:flex;align-items:center;gap:12px}
+.skill-label{font-size:12px;font-weight:600;width:160px;flex-shrink:0;color:var(--text-2)}
+.skill-bar-wrap{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.skill-bar-fill{height:100%;background:var(--text);border-radius:4px;transition:width .5s}
+.skill-count{font-size:11px;color:var(--text-3);width:20px;text-align:right}
+.skill-insight{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;font-size:13px;color:var(--text-2);line-height:1.7}
+
+/* CONTAINERS GRID */
+.containers-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.container-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color .15s}
+.container-card.i-claimed{border-color:var(--ok-bd);box-shadow:0 0 0 1px var(--ok-bd)}
+.cont-header{padding:14px 14px 10px;border-bottom:1px solid var(--border)}
+.cont-icon{font-size:18px;margin-bottom:4px}
+.cont-name{font-size:13px;font-weight:700}
+.cont-desc{font-size:11px;color:var(--text-3);line-height:1.5;margin-top:2px}
+.cont-slots{padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+.slot-row{display:flex;align-items:center;gap:10px;min-height:32px}
+.slot-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;width:42px;flex-shrink:0;color:var(--text-3)}
+.slot-action{flex:1;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.role-claim-btn{padding:5px 12px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;font-size:11px;cursor:pointer;color:var(--text-2);transition:all .1s;white-space:nowrap}
+.role-claim-btn:hover:not(:disabled){border-color:var(--border-strong);color:var(--text)}
+.role-claim-btn:disabled{opacity:.3;cursor:not-allowed}
+.role-claim-btn.claimed-vision{background:var(--vision-bg);border-color:var(--vision-bd);color:var(--vision-tx);font-weight:600}
+.role-claim-btn.claimed-lead{background:var(--lead-bg);border-color:var(--lead-bd);color:var(--lead-tx);font-weight:600}
+.role-claim-btn.claimed-ops{background:var(--ops-bg);border-color:var(--ops-bd);color:var(--ops-tx);font-weight:600}
+
+/* BUDGET BAR */
+.budget-bar-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:8px 12px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:12px}
+.budget-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.budget-fill{height:100%;border-radius:3px;transition:width .3s}
+.budget-ok{background:var(--ok-tx)}
+.budget-warn{background:#f59e0b}
+.budget-over{background:var(--danger-tx)}
+
+/* LIVE COUNT BANNER */
+.live-count{background:var(--info-bg);border:1px solid var(--info-tx);border-radius:var(--r);padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--info-tx);display:flex;align-items:center;gap:8px}
+.live-count-bar{flex:1;height:4px;background:rgba(12,68,124,.15);border-radius:2px;overflow:hidden}
+.live-count-fill{height:100%;background:var(--info-tx);border-radius:2px;transition:width .5s}
+
+/* SYNTHESIS */
+.subteam-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:24px}
+.subteam-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.subteam-card.active-team{border-color:var(--ok-bd)}
+.subteam-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.subteam-icon{font-size:18px;flex-shrink:0}
+.subteam-name{font-size:13px;font-weight:700;flex:1}
+.subteam-count{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--ok-bg);color:var(--ok-tx);font-weight:600;white-space:nowrap}
+.subteam-count.solo{background:var(--warn-bg);color:var(--warn-tx)}
+.subteam-count.empty{background:var(--bg);color:var(--text-3)}
+.subteam-empty{padding:14px;font-size:12px;color:var(--text-3);font-style:italic}
+.subteam-live-roles{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.live-role-section{display:flex;flex-direction:column;gap:4px}
+.live-role-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:0 2px;margin-bottom:2px}
+.live-role-label.vision{color:var(--vision-tx)}
+.live-role-label.lead{color:var(--lead-tx)}
+.live-role-label.ops{color:var(--ops-tx)}
+.live-role-body{display:flex;flex-direction:column;gap:4px}
+.live-member{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--rs);transition:background .1s;cursor:pointer}
+.live-member:hover{background:var(--bg)}
+.live-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.live-info{flex:1;display:flex;align-items:center;gap:8px}
+.live-name{font-size:13px;font-weight:600}
+.live-hours{font-size:11px;font-weight:600;padding:1px 6px;border-radius:8px;background:var(--bg)}
+.live-remove{border:none;background:transparent;color:var(--text-3);font-size:12px;cursor:pointer;padding:2px 6px;border-radius:4px}
+.live-remove:hover{color:var(--danger-tx);background:var(--danger-bg)}
+.hire-select{font-size:11px;padding:4px 8px;border:1px dashed var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text-2);cursor:pointer;max-width:200px}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:300;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+.modal-bg.open{display:flex}
+.detail-box{background:var(--surface);border-radius:var(--r);max-width:520px;width:100%;padding:24px;position:relative;margin:auto}
+.detail-close{position:absolute;top:14px;right:14px;background:var(--bg);border:none;border-radius:var(--rs);width:28px;height:28px;cursor:pointer;font-size:14px;color:var(--text-2)}
+.detail-top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.detail-av{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
+.detail-name{font-size:18px;font-weight:700}
+.detail-sub{font-size:12px;color:var(--text-3);margin-top:2px}
+.detail-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}
+.detail-tag{font-size:11px;padding:3px 9px;border-radius:10px;background:var(--bg);border:1px solid var(--border);color:var(--text-2)}
+.detail-sec{margin-bottom:14px}
+.detail-sec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);margin-bottom:6px}
+.detail-row{display:flex;gap:8px;font-size:12px;line-height:1.6;margin-bottom:4px}
+.dl{font-weight:600;color:var(--text);min-width:90px;flex-shrink:0;font-size:11px}
+.dv{color:var(--text-2)}
+.play-quote{font-style:italic;color:var(--text-2);font-size:12px;line-height:1.6;padding:8px 12px;background:var(--bg);border-radius:var(--rs);margin-bottom:6px}
+
+/* MISC */
+.sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);margin-bottom:12px;margin-top:8px}
+.filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;align-items:center}
+.filter-pill{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:11px;cursor:pointer;color:var(--text-2);transition:all .1s}
+.filter-pill.active{background:var(--text);color:#fff;border-color:var(--text)}
+.search-input{padding:6px 12px;border:1px solid var(--border);border-radius:20px;font-size:12px;background:var(--surface);color:var(--text);outline:none;width:160px}
+.search-input:focus{border-color:var(--border-strong)}
+.inc-chip{font-size:10px;padding:2px 7px;border-radius:10px;background:var(--bg);border:1px solid var(--border);color:var(--text-2);display:inline-block;margin:2px}
+
+/* WAITING SCREEN */
+.waiting-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;margin-top:48px}
+.waiting-title{font-size:20px;font-weight:700;margin-bottom:8px}
+.waiting-sub{font-size:13px;color:var(--text-2);margin-bottom:24px}
+.waiting-count{font-size:48px;font-weight:700;color:var(--text);margin-bottom:4px}
+.waiting-label{font-size:13px;color:var(--text-3)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin .8s linear infinite;margin:20px auto}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar" id="top-bar">
+  <div class="live-dot" id="live-dot"></div>
+  <div class="top-bar-title">YETI × HoBB</div>
+  <div class="step-tabs" id="step-tabs"></div>
+  <span class="claimed-badge" id="claimed-badge" style="display:none"></span>
+</div>
+
+<!-- WHO STRIP (step 3 only) -->
+<div class="who-strip" id="who-strip">
+  <span class="who-strip-label" id="who-label">Who are you?</span>
+  <div class="who-chips" id="who-chips"></div>
+</div>
+
+<!-- ACTION BAR -->
+<div class="action-bar" id="action-bar">
+  <div class="progress-dots" id="progress-dots"></div>
+  <button class="btn-back" id="btn-back" onclick="goBack()" style="display:none">← Back</button>
+  <span style="flex:1"></span>
+  <button class="btn-next btn-pulse" id="btn-next" onclick="goNext()">Loading…</button>
+</div>
+
+<!-- UPLOAD SCREEN -->
+<div class="upload-screen" id="upload-screen">
+  <div class="upload-card">
+    <div style="font-size:36px;margin-bottom:16px">🚀</div>
+    <div class="upload-title">YETI × HoBB — Live Session</div>
+    <div class="upload-sub">Upload the JSON export from the Team Map to start the session. Everyone on this URL will sync in real time.</div>
+    <label class="upload-btn">
+      Upload team JSON
+      <input type="file" accept=".json" class="upload-input" id="json-upload" onchange="handleUpload(event)">
+    </label>
+    <div class="spinner" id="upload-spinner" style="display:none"></div>
+    <div id="upload-status" style="font-size:12px;color:var(--text-3);margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- WAITING SCREEN (session started by someone else, you're joining) -->
+<div class="waiting-screen" id="waiting-screen" style="display:none">
+  <div class="waiting-title">Session in progress</div>
+  <div class="waiting-sub">Someone is already running this session. Joining now…</div>
+  <div class="spinner"></div>
+</div>
+
+<!-- SLIDES -->
+<div class="slide" id="slide-1">
+  <div class="slide-inner">
+    <div class="slide-coach">No judgement, only curiosity.</div>
+    <div class="slide-eyebrow">Step 1 of 4</div>
+    <div class="slide-heading">Who's in the room</div>
+    <div class="slide-sub">These are the real humans we're building with. Tap any card to see their full profile.</div>
+    <div class="filter-bar" id="filter-bar-1"></div>
+    <div class="people-grid" id="people-grid"></div>
+  </div>
+</div>
+
+<div class="slide" id="slide-2">
+  <div class="slide-inner">
+    <div class="slide-coach">Don't fix gaps yet — just see them.</div>
+    <div class="slide-eyebrow">Step 2 of 4</div>
+    <div class="slide-heading">Where we're strong, where we're thin</div>
+    <div class="slide-sub">The constraint map before we dream. Look together.</div>
+    <div id="skills-wrap"></div>
+    <div class="skill-insight" id="skill-insight"></div>
+  </div>
+</div>
+
+<div class="slide slide-3" id="slide-3">
+  <div class="slide-inner">
+    <div class="slide-coach">Choose what feels like yours. Nobody assigns you.</div>
+    <div class="slide-eyebrow">Step 3 of 4</div>
+    <div class="slide-heading">Claim your space</div>
+    <div class="slide-sub" id="own-it-sub">Pick your name above, then tap a role that calls to you.</div>
+    <div id="live-count-wrap"></div>
+    <div class="containers-wrap" id="containers-wrap"></div>
+  </div>
+</div>
+
+<div class="slide" id="slide-4">
+  <div class="slide-inner">
+    <div class="slide-coach">Treat this as V1. It will change.</div>
+    <div class="slide-eyebrow">Step 4 of 4</div>
+    <div class="slide-heading">Your teams</div>
+    <div class="slide-sub">People self-selected. Where you see overlap — sort it between yourselves. Ops can have as many people as it needs.</div>
+    <div class="subteam-grid" id="subteam-grid"></div>
+    <div id="unassigned-wrap"></div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-bg" id="detail-modal">
+  <div class="detail-box">
+    <button class="detail-close" onclick="closeDetail()">✕</button>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+const CONTAINERS = [
+  {id:"media",        icon:"◎",name:"Media & content",    desc:"Digital + print. Grafik, text, video.",         cost:{vision:2,lead:1.5,ops:1}},
+  {id:"onsite",       icon:"◈",name:"On-site experience", desc:"Workshops, stage, physical space in Athens.",    cost:{vision:2,lead:1.5,ops:1}},
+  {id:"creative_tech",icon:"◇",name:"Creative tech",      desc:"AI tools, digital mirror, data viz, interactive.",cost:{vision:2,lead:1.5,ops:1}},
+  {id:"comms",        icon:"◉",name:"Comms & outreach",   desc:"Social media, insta, WhatsApp, stakeholder messaging.",cost:{vision:1.5,lead:1,ops:0.5}},
+  {id:"turkish",      icon:"◐",name:"Turkish group coord",desc:"Bridge between YETI Dresden and Turkish cohort.", cost:{vision:1.5,lead:1,ops:0.5}},
+  {id:"ops_logistics",icon:"◑",name:"Ops & logistics",    desc:"Timelines, budgets, travel, Notion.",             cost:{vision:1.5,lead:1,ops:0.5}}
+];
+const SKILLS=[
+  {label:"Visual / design",tag:"Visual"},{label:"Strategy / vision",tag:"Strategist"},
+  {label:"Comms / stage",tag:"Communicator"},{label:"Connecting people",tag:"Connector"},
+  {label:"Organizing / ops",tag:"Organizer"},{label:"Analytics",tag:"Analyst"},
+  {label:"Builder / maker",tag:"Builder"}
+];
+const TIME_MAP={"~2–3h":2.5,"2–3h":2.5,"4–6h":5,"7–10h":8.5,"10h+":12};
+const HAT_ICONS={"C-Level":"◈","Lead":"◇","Management":"◇","Ops":"◑","Exploring":"◯","Not sure":"◯"};
+const INC_ICONS={Portfolio:"📁",Network:"🌐",Mentorship:"🧑‍🏫",Clarity:"🧭",Leadership:"🧱",Travel:"✈️",Opportunities:"🎯",Community:"🤝",Fun:"😄",Money:"💰"};
+const AVCOLORS=[
+  {bg:"#EEEDFE",fg:"#3C3489"},{bg:"#E1F5EE",fg:"#085041"},{bg:"#FAEEDA",fg:"#633806"},
+  {bg:"#FAECE7",fg:"#712B13"},{bg:"#E6F1FB",fg:"#0C447C"},{bg:"#EAF3DE",fg:"#3B6D11"},
+  {bg:"#FBEAF0",fg:"#72243E"},{bg:"#F1EFE8",fg:"#444441"},{bg:"#FCEBEB",fg:"#791F1F"},
+  {bg:"#9FE1CB",fg:"#085041"},{bg:"#FAC775",fg:"#633806"},{bg:"#CECBF6",fg:"#26215C"}
+];
+
+const esc=s=>(s||'').replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+const esJ=s=>(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+const initials=n=>n.split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2);
+const av=i=>AVCOLORS[i%AVCOLORS.length];
+
+// ── STATE ──
+let team=[], currentStep=0, activeUser=null, serverState=null;
+let filterTag='all', filterSearch='';
+let connected=false;
+
+function budgetFor(name){
+  const p=team.find(t=>t.name===name);
+  if(!p) return 5;
+  return TIME_MAP[p.timePerWeek]||5;
+}
+function usedHours(name){
+  if(!serverState?.claims) return 0;
+  return CONTAINERS.reduce((s,c)=>s+['vision','lead','ops'].reduce((s2,r)=>
+    s2+(serverState.claims[c.id]?.[r]?.find(a=>a.name===name)?.hours||0),0),0);
+}
+function myRoleIn(cid){
+  if(!serverState?.claims||!activeUser) return null;
+  for(const r of ['vision','lead','ops']){
+    if(serverState.claims[cid]?.[r]?.find(a=>a.name===activeUser)) return r;
+  }
+  return null;
+}
+
+// ── SSE CONNECTION ──
+function connectSSE(){
+  const es = new EventSource(API+'/api/session/events');
+  es.onmessage = e => {
+    const state = JSON.parse(e.data);
+    handleServerState(state);
+  };
+  es.onopen = () => {
+    connected=true;
+    document.getElementById('live-dot').style.background='#4ade80';
+  };
+  es.onerror = () => {
+    connected=false;
+    document.getElementById('live-dot').style.background='#f87171';
+    setTimeout(connectSSE, 3000);
+  };
+}
+
+function handleServerState(state){
+  serverState = state;
+  if(!state.active){
+    // No session yet — show upload screen
+    document.getElementById('upload-screen').style.display='flex';
+    document.getElementById('waiting-screen').style.display='none';
+    document.getElementById('action-bar').classList.remove('visible');
+    return;
+  }
+  document.getElementById('upload-screen').style.display='none';
+
+  // Load team if we don't have it yet
+  if(!team.length && state.teamCount > 0){
+    fetch(API+'/api/session/team')
+      .then(r=>r.json())
+      .then(d=>{
+        team=d.team||[];
+        renderAll(state.step);
+      });
+    return;
+  }
+
+  // Step changed from server
+  if(state.step !== currentStep){
+    currentStep = state.step;
+    switchToStep(state.step);
+  }
+
+  // Update live count banner
+  if(currentStep===3 && team.length){
+    const wrap = document.getElementById('live-count-wrap');
+    const pct = Math.round((state.claimedCount/team.length)*100);
+    wrap.innerHTML=`<div class="live-count">
+      <span>🧑 ${state.claimedCount} of ${team.length} have claimed a space</span>
+      <div class="live-count-bar"><div class="live-count-fill" style="width:${pct}%"></div></div>
+    </div>`;
+    const badge = document.getElementById('claimed-badge');
+    badge.textContent=`${state.claimedCount}/${team.length} claimed`;
+    badge.style.display='block';
+  } else {
+    document.getElementById('claimed-badge').style.display='none';
+  }
+
+  // Re-render claim buttons if on step 3
+  if(currentStep===3) renderContainers();
+
+  // Re-render synthesis if on step 4 and we have data
+  if(currentStep===4 && state.claims && state.team){
+    team = state.team;
+    renderSynthesis();
+  }
+
+  updateActionBar();
+}
+
+// ── UPLOAD ──
+async function handleUpload(e){
+  const file = e.target.files[0]; if(!file) return;
+  document.getElementById('upload-spinner').style.display='block';
+  document.getElementById('upload-status').textContent='Loading…';
+  const text = await file.text();
+  let data;
+  try { data = JSON.parse(text); } catch(err){ document.getElementById('upload-status').textContent='Invalid JSON'; return; }
+  if(!data.members?.length){ document.getElementById('upload-status').textContent='No members found'; return; }
+  const res = await fetch(API+'/api/session/init',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({members:data.members, pending:data.pending||[]})
+  });
+  if(res.ok){
+    document.getElementById('upload-status').textContent='✅ Session started!';
+  } else {
+    document.getElementById('upload-status').textContent='Error starting session';
+  }
+  document.getElementById('upload-spinner').style.display='none';
+}
+
+// ── RENDER ALL ──
+function renderAll(step){
+  renderTopTabs();
+  renderPeople();
+  renderSkills();
+  renderWhoStrip();
+  switchToStep(step||1);
+}
+
+function switchToStep(step){
+  currentStep=step;
+  document.querySelectorAll('.slide').forEach((s,i)=>s.classList.toggle('active',i+1===step));
+  if(step===3){
+    document.getElementById('who-strip').classList.add('visible');
+    document.body.classList.add('bars-3');
+    renderContainers();
+  } else {
+    document.getElementById('who-strip').classList.remove('visible');
+    document.body.classList.remove('bars-3');
+  }
+  if(step===4 && serverState?.claims) renderSynthesis();
+  document.getElementById('action-bar').classList.add('visible');
+  updateActionBar();
+  updateTopTabs();
+  window.scrollTo(0,0);
+}
+
+// ── NAV ──
+async function goNext(){
+  if(currentStep===3 && (!serverState?.claimedCount)) return;
+  const next = Math.min(currentStep+1, 4);
+  const res = await fetch(API+'/api/session/step',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({step:next})});
+  if(res.ok) switchToStep(next);
+}
+async function goBack(){
+  const prev = Math.max(currentStep-1, 1);
+  const res = await fetch(API+'/api/session/step',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({step:prev})});
+  if(res.ok) switchToStep(prev);
+}
+
+function updateActionBar(){
+  const back = document.getElementById('btn-back');
+  const next = document.getElementById('btn-next');
+  back.style.display = currentStep>1 ? 'block':'none';
+  const labels={1:'See the constraints →',2:'Claim your space →',3:'See our teams →',4:'Export JSON ↓'};
+  next.textContent = labels[currentStep]||'Next →';
+  next.disabled = currentStep===3 && !(serverState?.claimedCount > 0);
+  updateProgressDots();
+}
+
+function updateProgressDots(){
+  const dots = document.getElementById('progress-dots');
+  dots.innerHTML=[1,2,3,4].map(s=>
+    `<div class="dot ${s<currentStep?'done':s===currentStep?'active':''}"></div>`
+  ).join('');
+}
+
+function renderTopTabs(){
+  const labels=['The room','Constraints','Claim','Teams'];
+  document.getElementById('step-tabs').innerHTML=labels.map((l,i)=>`
+    <div class="step-tab ${i+1===currentStep?'active':i+1<currentStep?'done':''}">
+      <div class="tab-num">${i+1<currentStep?'✓':i+1}</div>${l}
+    </div>`).join('');
+}
+function updateTopTabs(){ renderTopTabs(); }
+
+// ── WHO STRIP ──
+function renderWhoStrip(){
+  document.getElementById('who-chips').innerHTML=team.map((p,i)=>
+    `<div class="you-chip${activeUser===p.name?' active':''}" onclick="setUser('${esJ(p.name)}')">${p.name}</div>`
+  ).join('');
+  const label = document.getElementById('who-label');
+  if(activeUser){ label.textContent=activeUser; label.classList.remove('needs-pick'); }
+  else { label.textContent='Who are you?'; label.classList.add('needs-pick'); }
+}
+function setUser(name){
+  activeUser=(activeUser===name)?null:name;
+  renderWhoStrip();
+  if(currentStep===3) renderContainers();
+}
+
+// ── STEP 1: PEOPLE ──
+function renderPeople(){
+  const grid=document.getElementById('people-grid');
+  let data=[...team];
+  if(filterTag!=='all') data=data.filter(m=>(m.roleTags||[]).includes(filterTag));
+  if(filterSearch) data=data.filter(m=>m.name.toLowerCase().includes(filterSearch.toLowerCase()));
+  grid.innerHTML=data.map((p,i)=>{
+    const idx=team.indexOf(p);
+    const c=av(idx);
+    const driver=p.driverSeatScore||p.fulfillOrOriginate||5;
+    return`<div class="person-card" onclick="showDetail(${idx})">
+      <div class="pc-top">
+        <div class="pc-av" style="background:${c.bg};color:${c.fg}">${initials(p.name)}</div>
+        <div><div class="pc-name">${p.name}</div><div class="pc-loc">${p.location||''} · ${HAT_ICONS[p.companyHat]||'◯'} ${p.companyHat||''}</div></div>
+      </div>
+      <div class="pc-tags">${(p.roleTags||[]).map(t=>`<span class="pc-tag">${t}</span>`).join('')}</div>
+      ${p.feelsLikePlay?`<div class="pc-play">${esc(p.feelsLikePlay.slice(0,80))}${p.feelsLikePlay.length>80?'…':''}</div>`:''}
+      <div class="pc-driver"><span>Support</span><div class="driver-track"><div class="driver-fill" style="width:${driver*10}%"></div></div><span>Driver ${driver}/10</span><span style="margin-left:4px;font-size:10px;color:var(--text-3)">${p.timePerWeek||''}</span></div>
+    </div>`;
+  }).join('');
+
+  // filter bar
+  const fb=document.getElementById('filter-bar-1');
+  const allTags=[...new Set(team.flatMap(m=>m.roleTags||[]))].sort();
+  fb.innerHTML=`<input class="search-input" placeholder="Search…" oninput="filterSearch=this.value;renderPeople()" value="${filterSearch}">
+    <div class="filter-pill${filterTag==='all'?' active':''}" onclick="filterTag='all';renderPeople()">All</div>
+    ${allTags.map(t=>`<div class="filter-pill${filterTag===t?' active':''}" onclick="filterTag='${t}';renderPeople()">${t}</div>`).join('')}`;
+}
+
+// ── STEP 2: SKILLS ──
+function renderSkills(){
+  const wrap=document.getElementById('skills-wrap');
+  const counts=SKILLS.map(s=>({...s,count:team.filter(m=>(m.roleTags||[]).includes(s.tag)).length}));
+  const max=Math.max(...counts.map(s=>s.count),1);
+  wrap.innerHTML=`<div class="skills-wrap">${counts.map(s=>`
+    <div class="skill-row">
+      <div class="skill-label">${s.label}</div>
+      <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:${(s.count/max)*100}%"></div></div>
+      <div class="skill-count">${s.count}</div>
+    </div>`).join('')}</div>`;
+
+  const thin=counts.filter(s=>s.count<=1).map(s=>s.label);
+  const overflow=counts.filter(s=>s.count>=4).map(s=>s.label);
+  document.getElementById('skill-insight').innerHTML=
+    (overflow.length?`<strong>Strong:</strong> ${overflow.join(', ')}. `:'') +
+    (thin.length?`<strong>Thin:</strong> ${thin.join(', ')} — fewer than 2 people. These are constraints.<br>`:'') +
+    `Total capacity: ${team.reduce((s,m)=>s+(TIME_MAP[m.timePerWeek]||5),0).toFixed(0)}h/week across ${team.length} people.`;
+}
+
+// ── STEP 3: CLAIM ──
+function renderContainers(){
+  const claims=serverState?.claims||{};
+  document.getElementById('containers-wrap').innerHTML=CONTAINERS.map(c=>{
+    const a=claims[c.id]||{vision:[],lead:[],ops:[]};
+    const myRole=myRoleIn(c.id);
+    const iClaimed=!!myRole;
+
+    const used=activeUser?usedHours(activeUser):0;
+    const budget=activeUser?budgetFor(activeUser):5;
+    const rem=budget-used;
+
+    // Budget bar
+    const pct=Math.round((used/budget)*100);
+    const bCls=pct>=100?'budget-over':pct>=80?'budget-warn':'budget-ok';
+
+    const slots=['vision','lead','ops'].map(role=>{
+      const iHaveThisRole=activeUser&&a[role]?.find(x=>x.name===activeUser);
+      let myBtn='';
+      if(!activeUser){
+        myBtn=role==='vision'?`<span style="font-size:11px;color:var(--text-3);font-style:italic">← pick your name above</span>`:'';
+      } else if(iHaveThisRole){
+        myBtn=`<button class="role-claim-btn claimed-${role}" onclick="unclaim('${c.id}','${role}')">✓ ${role} — ${iHaveThisRole.hours}h <span style="opacity:.6;font-size:10px">× remove</span></button>`;
+      } else if(!myRole){
+        const cost=c.cost[role];
+        const wouldExceed=rem<cost;
+        myBtn=wouldExceed
+          ?`<button class="role-claim-btn" disabled title="Only ${rem.toFixed(1)}h left">${role} (${cost}h) — no budget</button>`
+          :`<button class="role-claim-btn" onclick="claim('${c.id}','${role}')">${role} <span style="opacity:.5;font-size:10px">${cost}h</span></button>`;
+      }
+      return`<div class="slot-row"><span class="slot-label">${role}</span><div class="slot-action">${myBtn}</div></div>`;
+    }).join('');
+
+    return`<div class="container-card${iClaimed?' i-claimed':''}">
+      <div class="cont-header">
+        <div class="cont-icon">${c.icon}</div>
+        <div class="cont-name">${c.name}</div>
+        <div class="cont-desc">${c.desc}</div>
+      </div>
+      <div class="cont-slots">${slots}</div>
+    </div>`;
+  }).join('');
+
+  // update own-it-sub
+  if(activeUser){
+    const used=usedHours(activeUser);
+    const budget=budgetFor(activeUser);
+    const rem=(budget-used).toFixed(1);
+    const col=used>=budget?'color:#e24b4a':used>budget*.75?'color:#ba7517':'color:#639922';
+    document.getElementById('own-it-sub').innerHTML=`Signed in as <strong>${activeUser}</strong>. Budget: <strong style="${col}">${rem}h remaining</strong> of ${budget}h/week.`;
+  } else {
+    document.getElementById('own-it-sub').textContent='Pick your name above — then tap a role that calls to you.';
+  }
+}
+
+async function claim(cid,role){
+  if(!activeUser) return;
+  const res=await fetch(API+'/api/session/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:activeUser,cid,role})});
+  if(!res.ok){ const e=await res.json(); alert(`Can't claim: ${e.error}`); return; }
+  renderContainers();
+}
+async function unclaim(cid,role){
+  if(!activeUser) return;
+  await fetch(API+'/api/session/unclaim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:activeUser,cid,role})});
+  renderContainers();
+}
+
+// ── STEP 4: SYNTHESIS ──
+function renderSynthesis(){
+  const claims=serverState?.claims||{};
+  const t=serverState?.team||team;
+  const allAssigned=new Set();
+  CONTAINERS.forEach(c=>['vision','lead','ops'].forEach(r=>(claims[c.id]?.[r]||[]).forEach(a=>allAssigned.add(a.name))));
+  const unassigned=t.filter(p=>!allAssigned.has(p.name));
+
+  document.getElementById('subteam-grid').innerHTML=CONTAINERS.map(c=>{
+    const a=claims[c.id]||{vision:[],lead:[],ops:[]};
+    const allPeople=[...new Set([...a.vision,...a.lead,...a.ops].map(x=>x.name))];
+    if(!allPeople.length) return`<div class="subteam-card">
+      <div class="subteam-header"><div class="subteam-icon">${c.icon}</div><div class="subteam-name">${c.name}</div><span class="subteam-count empty">no one yet</span></div>
+      <div class="subteam-empty">Nobody claimed this space.</div>
+      <div style="padding:0 14px 12px">${hireDropHTML(c.id,'vision',allPeople)}${hireDropHTML(c.id,'lead',allPeople)}${hireDropHTML(c.id,'ops',allPeople)}</div>
+    </div>`;
+
+    const totalHours=[...a.vision,...a.lead,...a.ops].reduce((s,x)=>s+x.hours,0);
+    const roleRows=['vision','lead','ops'].map(role=>{
+      const claimers=a[role]||[];
+      const filled=claimers.map(({name,hours})=>{
+        const idx=t.findIndex(p=>p.name===name);
+        const c2=idx>=0?av(idx):{bg:'#e6f1fb',fg:'#0c447c'};
+        const bpct=idx>=0?Math.round(hours/budgetFor(name)*100):50;
+        const col=bpct>=100?'#e24b4a':bpct>=80?'#ba7517':'#639922';
+        return`<div class="live-member" onclick="if(${idx}>=0)showDetail(${idx})">
+          <div class="live-av" style="background:${c2.bg};color:${c2.fg}">${initials(name)}</div>
+          <div class="live-info"><span class="live-name">${name}</span><span class="live-hours" style="color:${col}">${hours}h/wk</span></div>
+          <button class="live-remove" onclick="event.stopPropagation();removeFromSlot('${c.id}','${role}','${esJ(name)}')">✕</button>
+        </div>`;
+      }).join('');
+      const canAdd=(role==='ops')||claimers.length===0;
+      return`<div class="live-role-section">
+        <div class="live-role-label ${role}">${role}</div>
+        <div class="live-role-body">${filled}${canAdd?hireDropHTML(c.id,role,allPeople):''}</div>
+      </div>`;
+    }).join('');
+
+    return`<div class="subteam-card active-team">
+      <div class="subteam-header">
+        <div class="subteam-icon">${c.icon}</div>
+        <div class="subteam-name">${c.name}</div>
+        <span class="subteam-count${allPeople.length===1?' solo':''}">${allPeople.length} person${allPeople.length!==1?'s':''} · ${totalHours.toFixed(1)}h/wk</span>
+      </div>
+      <div class="subteam-live-roles">${roleRows}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('unassigned-wrap').innerHTML=unassigned.length?`
+    <p class="sec-title">Not yet in a team</p>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px">${unassigned.map(p=>{
+      const idx=t.indexOf(p);
+      const c2=av(idx);
+      return`<span style="background:${c2.bg};color:${c2.fg};padding:4px 12px;border-radius:10px;font-size:12px;cursor:pointer" onclick="showDetail(${idx})"><strong>${p.name}</strong></span>`;
+    }).join('')}</div>`:'';
+}
+
+function hireDropHTML(cid,role,excludeNames){
+  const t=serverState?.team||team;
+  const pool=t.filter(p=>{
+    if(excludeNames.includes(p.name)) return false;
+    const c=CONTAINERS.find(x=>x.id===cid);
+    return (usedHours(p.name)+c.cost[role])<=budgetFor(p.name);
+  });
+  // Also add surprises
+  const surp=(serverState?.surprises||[]).filter(s=>!excludeNames.includes(s.name));
+  if(!pool.length&&!surp.length) return`<span style="font-size:11px;color:var(--text-3);font-style:italic;padding:4px 0">No one available</span>`;
+  const opts=[
+    ...pool.map(p=>`<option value="${esJ(p.name)}">${p.name} (${(budgetFor(p.name)-usedHours(p.name)).toFixed(1)}h left)</option>`),
+    ...surp.map(s=>`<option value="${esJ(s.name)}">✨ ${s.name} (surprise)</option>`)
+  ].join('');
+  return`<select class="hire-select" onchange="hireIntoSlot('${cid}','${role}',this.value);this.value=''">
+    <option value="">+ hire for ${role}…</option>${opts}
+  </select>`;
+}
+
+async function hireIntoSlot(cid,role,name){
+  if(!name) return;
+  await fetch(API+'/api/session/hire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,cid,role})});
+}
+async function removeFromSlot(cid,role,name){
+  await fetch(API+'/api/session/remove',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,cid,role})});
+}
+
+// ── DETAIL MODAL ──
+function showDetail(idx){
+  const p=team[idx],c=av(idx);
+  function dr(l,v){if(!v)return '';return `<div class="detail-row"><span class="dl">${l}</span><span class="dv">${esc(v)}</span></div>`}
+  const hat=p.companyHat||'';
+  const driver=p.driverSeatScore||p.fulfillOrOriginate||5;
+  document.getElementById('detail-content').innerHTML=`
+    <div class="detail-top">
+      <div class="detail-av" style="background:${c.bg};color:${c.fg}">${initials(p.name)}</div>
+      <div><div class="detail-name">${p.name}</div><div class="detail-sub">${p.background||''} · ${p.location||''}</div></div>
+    </div>
+    <div class="detail-tags">${(p.roleTags||[]).map(r=>`<span class="detail-tag">${r}</span>`).join('')}<span class="detail-tag">${HAT_ICONS[hat]||'◯'} ${hat}</span></div>
+    <div class="detail-sec"><div class="detail-sec-title">Zone of Genius</div>
+      ${p.feelsLikePlay?`<div class="play-quote">${esc(p.feelsLikePlay)}</div>`:''}
+      ${dr('Ask me for',p.peopleAskMeFor)}</div>
+    <div class="detail-sec"><div class="detail-sec-title">Execution</div>
+      ${dr('Go-time',p.naturalExecutionTask)}${dr('Time/wk',p.timePerWeek)}${dr('Drainers',p.drainers)}${dr('Constraints',p.constraints)}</div>
+    <div class="detail-sec"><div class="detail-sec-title">Owns</div>${dr('Owns',p.ownedSlice)}</div>
+    <div class="detail-sec"><div class="detail-sec-title">Incentives</div>
+      <div>${(p.projectIncentives||[]).map(k=>`<span class="inc-chip">${INC_ICONS[k]||''} ${k}</span>`).join('')}</div></div>`;
+  document.getElementById('detail-modal').classList.add('open');
+}
+function closeDetail(){document.getElementById('detail-modal').classList.remove('open');}
+document.getElementById('detail-modal').addEventListener('click',e=>{if(e.target===document.getElementById('detail-modal'))closeDetail();});
+
+// ── INIT ──
+connectSSE();
+</script>
+</body>
+</html>
