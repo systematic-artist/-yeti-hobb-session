@@ -290,6 +290,7 @@ body.bars-3 .slide{margin-top:160px}
     <div class="slide-eyebrow">Step 4 of 4</div>
     <div class="slide-heading">Your teams</div>
     <div class="slide-sub">People self-selected. Where you see overlap — sort it between yourselves. Ops can have as many people as it needs.</div>
+    <div id="overlap-wrap"></div>
     <div class="subteam-grid" id="subteam-grid"></div>
     <div id="unassigned-wrap"></div>
   </div>
@@ -693,13 +694,89 @@ function renderSynthesis(){
   CONTAINERS.forEach(c=>['vision','lead','ops'].forEach(r=>(claims[c.id]?.[r]||[]).forEach(a=>allAssigned.add(a.name))));
   const unassigned=t.filter(p=>!allAssigned.has(p.name));
 
+  // Detect overlaps — vision + lead only (ops multiple is fine)
+  const overlaps=[];
+  CONTAINERS.forEach(c=>{
+    ['vision','lead'].forEach(role=>{
+      const claimers=(claims[c.id]?.[role]||[]);
+      if(claimers.length>1) overlaps.push({c, role, claimers});
+    });
+  });
+
+  // Render overlap banner
+  const overlapWrap = document.getElementById('overlap-wrap');
+  if(overlaps.length){
+    overlapWrap.innerHTML=`<div style="background:#fff3e0;border:1.5px solid #ffb74d;border-radius:10px;padding:16px 20px;margin-bottom:20px">
+      <div style="font-weight:700;font-size:13px;color:#e65100;margin-bottom:6px">🔥 ${overlaps.length} hot spot${overlaps.length>1?'s':''} — multiple people claimed the same role</div>
+      <div style="font-size:12px;color:#bf360c;margin-bottom:12px;line-height:1.6">One person needs to step back or move to Ops. Reach out directly — you have their contact below.</div>
+      ${overlaps.map(({c,role,claimers})=>`
+        <div style="background:white;border-radius:8px;padding:10px 14px;margin-bottom:8px;border:1px solid #ffcc80">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#e65100;margin-bottom:8px">${c.icon} ${c.name} — ${role}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            ${claimers.map(({name})=>{
+              const p=t.find(x=>x.name===name);
+              const idx=t.indexOf(p);
+              const c2=idx>=0?av(idx):{bg:'#e6f1fb',fg:'#0c447c'};
+              const phone=p?.phone||p?.contact||'';
+              return`<div style="display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:8px;padding:6px 10px;cursor:pointer" onclick="showDetail(${idx})">
+                <div style="width:28px;height:28px;border-radius:50%;background:${c2.bg};color:${c2.fg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${initials(name)}</div>
+                <div>
+                  <div style="font-size:12px;font-weight:600">${name}</div>
+                  ${phone?`<div style="font-size:10px;color:var(--text-3)">${phone}</div>`:''}
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`).join('')}
+    </div>`;
+  } else {
+    overlapWrap.innerHTML='';
+  }
+
   document.getElementById('subteam-grid').innerHTML=CONTAINERS.map(c=>{
     const a=claims[c.id]||{vision:[],lead:[],ops:[]};
     const allPeople=[...new Set([...a.vision,...a.lead,...a.ops].map(x=>x.name))];
-    if(!allPeople.length) return`<div class="subteam-card">
+
+    // Health check
+    const hasVision=a.vision.length>0;
+    const hasLead=a.lead.length>0;
+    const hasOps=a.ops.length>0;
+    const hasMgmt=hasVision||hasLead;
+
+    // Status banner
+    let statusBanner='';
+    let cardBorder='';
+    if(!allPeople.length){
+      statusBanner=`<div style="background:#fce4ec;border-top:1px solid #ef9a9a;padding:10px 14px;font-size:12px;color:#b71c1c">
+        ❌ <strong>Nobody here.</strong> This container is out unless someone steps up. Use the hire dropdowns below.
+      </div>`;
+      cardBorder='border-color:#ef9a9a';
+    } else if(allPeople.length===1 && !hasOps){
+      statusBanner=`<div style="background:#fff8e1;border-top:1px solid #ffe082;padding:10px 14px;font-size:12px;color:#e65100">
+        ⚠️ <strong>Solo and no Ops.</strong> One person can't run this alone. Who does the actual work? Recruit at least one more.
+      </div>`;
+      cardBorder='border-color:#ffb74d';
+    } else if(hasMgmt && !hasOps){
+      statusBanner=`<div style="background:#fff8e1;border-top:1px solid #ffe082;padding:10px 14px;font-size:12px;color:#e65100">
+        ⚠️ <strong>No one in Ops.</strong> Vision and direction are set — but who executes? Add at least one Ops person to make this real.
+      </div>`;
+      cardBorder='border-color:#ffb74d';
+    } else if(hasOps && !hasMgmt){
+      statusBanner=`<div style="background:#fff8e1;border-top:1px solid #ffe082;padding:10px 14px;font-size:12px;color:#e65100">
+        ⚠️ <strong>No Vision or Lead.</strong> People are ready to execute but nobody is setting direction. Add a Vision or Lead.
+      </div>`;
+      cardBorder='border-color:#ffb74d';
+    } else if(allPeople.length===1){
+      statusBanner=`<div style="background:#fff8e1;border-top:1px solid #ffe082;padding:10px 14px;font-size:12px;color:#e65100">
+        ⚠️ <strong>Solo right now.</strong> One person can't carry a container. Recruit at least one more.
+      </div>`;
+      cardBorder='border-color:#ffb74d';
+    }
+
+    if(!allPeople.length) return`<div class="subteam-card" style="${cardBorder}">
       <div class="subteam-header"><div class="subteam-icon">${c.icon}</div><div class="subteam-name">${c.name}</div><span class="subteam-count empty">no one yet</span></div>
-      <div class="subteam-empty">Nobody claimed this space.</div>
       <div style="padding:0 14px 12px">${hireDropHTML(c.id,'vision',allPeople)}${hireDropHTML(c.id,'lead',allPeople)}${hireDropHTML(c.id,'ops',allPeople)}</div>
+      ${statusBanner}
     </div>`;
 
     const totalHours=[...a.vision,...a.lead,...a.ops].reduce((s,x)=>s+x.hours,0);
@@ -733,13 +810,14 @@ function renderSynthesis(){
       </div>`;
     }).join('');
 
-    return`<div class="subteam-card active-team">
+    return`<div class="subteam-card active-team" style="${cardBorder}">
       <div class="subteam-header">
         <div class="subteam-icon">${c.icon}</div>
         <div class="subteam-name">${c.name}</div>
         <span class="subteam-count${allPeople.length===1?' solo':''}">${allPeople.length} person${allPeople.length!==1?'s':''} · ${totalHours.toFixed(1)}h/wk</span>
       </div>
       <div class="subteam-live-roles">${roleRows}</div>
+      ${statusBanner}
     </div>`;
   }).join('');
 
