@@ -156,10 +156,18 @@ app.get('/api/session/events', (req,res) => {
   res.setHeader('Content-Type','text/event-stream');
   res.setHeader('Cache-Control','no-cache');
   res.setHeader('Connection','keep-alive');
+  res.setHeader('X-Accel-Buffering','no'); // disable nginx buffering
   res.flushHeaders();
   clients.push(res);
   res.write(`data: ${JSON.stringify(publicState())}\n\n`);
-  req.on('close', () => { clients = clients.filter(c=>c!==res); });
+  // Keepalive ping every 20s so Railway proxy doesn't cut the connection
+  const ping = setInterval(() => {
+    try { res.write(`: ping\n\n`); } catch(e) { clearInterval(ping); }
+  }, 20000);
+  req.on('close', () => {
+    clearInterval(ping);
+    clients = clients.filter(c=>c!==res);
+  });
 });
 
 // Load team JSON and start session
