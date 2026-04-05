@@ -210,6 +210,7 @@ body.bars-3 .slide{margin-top:160px}
 <div class="top-bar" id="top-bar">
   <div class="live-dot" id="live-dot"></div>
   <div class="top-bar-title">YETI × HoBB</div>
+  <div id="conn-status" style="display:none;font-size:11px;color:#fbbf24;background:rgba(251,191,36,.15);padding:3px 10px;border-radius:20px;margin-left:8px"></div>
   <div class="step-tabs" id="step-tabs"></div>
   <span class="claimed-badge" id="claimed-badge" style="display:none"></span>
 </div>
@@ -359,20 +360,33 @@ function myRoleIn(cid){
 }
 
 // ── SSE CONNECTION ──
+let sseRetries = 0;
 function connectSSE(){
   const es = new EventSource(API+'/api/session/events');
   es.onmessage = e => {
+    sseRetries = 0;
     const state = JSON.parse(e.data);
     handleServerState(state);
   };
   es.onopen = () => {
     connected=true;
+    sseRetries = 0;
     document.getElementById('live-dot').style.background='#4ade80';
+    document.getElementById('conn-status').style.display='none';
   };
   es.onerror = () => {
     connected=false;
+    es.close();
     document.getElementById('live-dot').style.background='#f87171';
-    setTimeout(connectSSE, 3000);
+    sseRetries++;
+    if(sseRetries >= 5){
+      // Too many failures — reload the page cleanly
+      window.location.reload();
+      return;
+    }
+    document.getElementById('conn-status').style.display='flex';
+    document.getElementById('conn-status').textContent=`Reconnecting… (${sseRetries}/5)`;
+    setTimeout(connectSSE, 2000);
   };
 }
 
