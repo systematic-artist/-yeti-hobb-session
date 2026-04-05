@@ -246,9 +246,18 @@ app.post('/api/session/updatehours', (req,res) => {
   const {name, cid, role, hours} = req.body;
   if(!session.claims[cid]) return res.status(400).json({error:'invalid container'});
   const entry = session.claims[cid][role]?.find(a=>a.name===name);
-  if(entry) entry.hours = parseFloat(hours)||0.5;
+  if(!entry) return res.status(400).json({error:'not found'});
+  // Validate against budget
+  const budget = budgetFor(name);
+  const usedElsewhere = CONTAINERS.reduce((s,c) =>
+    s+['vision','lead','ops'].reduce((s2,r) => {
+      if(c.id===cid && r===role) return s2; // skip current slot
+      return s2+(session.claims[c.id]?.[r]?.find(a=>a.name===name)?.hours||0);
+    },0),0);
+  const maxAllowed = Math.max(0.5, budget - usedElsewhere);
+  entry.hours = Math.min(parseFloat(hours)||0.5, maxAllowed);
   broadcast(publicState()); saveSession();
-  res.json({ok:true});
+  res.json({ok:true, hours: entry.hours});
 });
 
 // Unclaim
