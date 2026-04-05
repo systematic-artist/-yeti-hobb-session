@@ -669,6 +669,10 @@ async function updateHours(cid, role, val){
   const hours = Math.max(0.5, parseFloat(val)||0.5);
   await fetch(API+'/api/session/updatehours',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:activeUser,cid,role,hours})});
 }
+async function updateHoursFor(name, cid, role, val){
+  const hours = Math.max(0.5, parseFloat(val)||0.5);
+  await fetch(API+'/api/session/updatehours',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,cid,role,hours})});
+}
 async function claim(cid,role){
   if(!activeUser) return;
   const res=await fetch(API+'/api/session/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:activeUser,cid,role})});
@@ -704,12 +708,22 @@ function renderSynthesis(){
       const filled=claimers.map(({name,hours})=>{
         const idx=t.findIndex(p=>p.name===name);
         const c2=idx>=0?av(idx):{bg:'#e6f1fb',fg:'#0c447c'};
-        const bpct=idx>=0?Math.round(hours/budgetFor(name)*100):50;
+        const budget=budgetFor(name);
+        const used=usedHours(name);
+        const maxH=Math.min(budget, hours+(budget-used+hours)).toFixed(1); // budget total
+        const bpct=budget>0?Math.round(hours/budget*100):50;
         const col=bpct>=100?'#e24b4a':bpct>=80?'#ba7517':'#639922';
         return`<div class="live-member" onclick="if(${idx}>=0)showDetail(${idx})">
           <div class="live-av" style="background:${c2.bg};color:${c2.fg}">${initials(name)}</div>
-          <div class="live-info"><span class="live-name">${name}</span><span class="live-hours" style="color:${col}">${hours}h/wk</span></div>
-          <button class="live-remove" onclick="event.stopPropagation();removeFromSlot('${c.id}','${role}','${esJ(name)}')">✕</button>
+          <div class="live-info">
+            <span class="live-name">${name}</span>
+            <input type="number" min="0.5" max="${budget}" step="0.5" value="${hours}"
+              style="width:46px;padding:2px 5px;border:1px solid var(--border);border-radius:var(--rs);font-size:11px;font-weight:600;color:${col}"
+              onclick="event.stopPropagation()"
+              onchange="event.stopPropagation();updateHoursFor('${esJ(name)}','${esJ(c.id)}','${role}',this.value)">
+            <span style="font-size:11px;color:var(--text-3)">/ ${budget}h</span>
+          </div>
+          <button class="live-remove" onclick="event.stopPropagation();removeFromSlot('${esJ(c.id)}','${role}','${esJ(name)}')">✕</button>
         </div>`;
       }).join('');
       const canAdd=(role==='ops')||claimers.length===0;
